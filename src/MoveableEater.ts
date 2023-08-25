@@ -4,11 +4,11 @@ import IFeedable from "./IFeedable";
 import IEatable from "./IEatable";
 
 export default class MoveableEater extends Feed implements IMoveable, IFeedable {
-    speedOffset: number = 200;
-    speedCoefficient: number = 1;
+    speedOffset: number = 250;
+    speedCoefficient: number = 10;
 
     getSpeed(): number {
-        return this.speedOffset + this.speedCoefficient * this.mass;
+        return this.speedOffset - this.speedCoefficient * Math.sqrt(this.mass);
     }
 
     eat(feed: IEatable): void {
