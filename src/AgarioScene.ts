@@ -1,35 +1,80 @@
-import Phaser from 'phaser'
+import Phaser from 'phaser';
+import Feed from './Feed';
+import MoveableEater from './MoveableEater';
 
 export default class AgarioScene extends Phaser.Scene {
+	private player!: Phaser.GameObjects.Arc;
+	private feedGroup!: Phaser.Physics.Arcade.Group;
+	private cursor!: Phaser.Types.Input.Keyboard.CursorKeys;
+
+	private speed: number = 100;
+
 	constructor() {
-		super('hello-world')
+		super('');
 	}
 
-	preload() {
-		this.load.setBaseURL('https://labs.phaser.io')
+	create(): void {
+		this.feedGroup = this.initializeFeed();
+		this.player = this.initializePlayer(this.feedGroup);
 
-		this.load.image('sky', 'assets/skies/space3.png')
-		this.load.image('logo', 'assets/sprites/phaser3-logo.png')
-		this.load.image('red', 'assets/particles/red.png')
+		this.cursor = this.input.keyboard.createCursorKeys();
 	}
 
-	create() {
-		this.add.image(400, 300, 'sky')
+	private initializeFeed(): Phaser.Physics.Arcade.Group {
+		let feedGroup = this.physics.add.group();
+		let feed = new Feed(this, 200, 200, 10, 0, 360, false, 0x00ffff);
+		feedGroup.add(feed, true);
 
-		const particles = this.add.particles('red')
+		feedGroup.children.iterate(this.updateFeedGroup);
 
-		const emitter = particles.createEmitter({
-			speed: 100,
-			scale: { start: 1, end: 0 },
-			blendMode: 'ADD',
-		})
+		//let circle = new Phaser.Geom.Circle(300, 200, 200);
 
-		const logo = this.physics.add.image(400, 100, 'logo')
+		return feedGroup;
+	}
 
-		logo.setVelocity(100, 200)
-		logo.setBounce(1, 1)
-		logo.setCollideWorldBounds(true)
+	private updateFeedGroup(child: Phaser.GameObjects.GameObject): void {
+		let feedBody = child.body as Phaser.Physics.Arcade.Body;
+		feedBody.allowGravity = false;
+	}
 
-		emitter.startFollow(logo)
+	private initializePlayer(feedGroup: Phaser.Physics.Arcade.Group): Phaser.GameObjects.Arc {
+		let player = new MoveableEater(this, 400, 200, 50, 0, 360, false, 0xff0000);
+		player.mass = 10;
+		player.updateSize();
+		
+		this.physics.add.overlap(player, feedGroup, this.collectFeed, undefined, this);
+		
+		return player;
+	}
+
+	private collectFeed(player: MoveableEater, feed: Feed) {
+		if (!player.checkFeedPosibility(feed))
+			return;
+
+		player.eat(feed);
+		player.updateSize();
+		feed.destroy();
+		console.log(player.mass);
+	}
+
+	update(time: number, delta: number): void {
+		let velocity = this.getInput();
+
+		velocity.x *= this.speed;
+		velocity.y *= this.speed;
+
+		(this.player.body as Phaser.Physics.Arcade.Body).setVelocity(velocity.x, velocity.y);
+	}
+
+	private getInput(): Phaser.Math.Vector2 {
+		let velocity = new Phaser.Math.Vector2(
+			Number(this.cursor.right.isDown) - Number(this.cursor.left.isDown), 
+			Number(this.cursor.down.isDown) - Number(this.cursor.up.isDown)
+		);
+
+		if (velocity.lengthSq() != 0)
+			velocity = velocity.normalize();
+
+			return velocity;
 	}
 }
