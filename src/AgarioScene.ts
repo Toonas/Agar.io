@@ -3,7 +3,7 @@ import Feed from './Feed';
 import MoveableEater from './MoveableEater';
 
 export default class AgarioScene extends Phaser.Scene {
-	private player!: Phaser.GameObjects.Arc;
+	private player!: MoveableEater;
 	private feedGroup!: Phaser.Physics.Arcade.Group;
 	private cursor!: Phaser.Types.Input.Keyboard.CursorKeys;
 
@@ -22,8 +22,14 @@ export default class AgarioScene extends Phaser.Scene {
 
 	private initializeFeed(): Phaser.Physics.Arcade.Group {
 		let feedGroup = this.physics.add.group();
-		let feed = new Feed(this, 200, 200, 10, 0, 360, false, 0x00ffff);
-		feedGroup.add(feed, true);
+
+		let spawnRect = new Phaser.Geom.Rectangle(0, 0, 800, 600);
+
+		for (let i = 0; i < 100; i++) {
+			let point = spawnRect.getRandomPoint();
+			let feed = new Feed(this, point.x, point.y, 10, 0, 360, false, 0x00ffff);
+			feedGroup.add(feed, true);
+		}
 
 		feedGroup.children.iterate(this.updateFeedGroup);
 
@@ -37,9 +43,11 @@ export default class AgarioScene extends Phaser.Scene {
 		feedBody.allowGravity = false;
 	}
 
-	private initializePlayer(feedGroup: Phaser.Physics.Arcade.Group): Phaser.GameObjects.Arc {
+	private initializePlayer(feedGroup: Phaser.Physics.Arcade.Group): MoveableEater {
 		let player = new MoveableEater(this, 400, 200, 50, 0, 360, false, 0xff0000);
 		player.mass = 10;
+		player.speedOffset = 250;
+		player.speedCoefficient = 10;
 		player.updateSize();
 		
 		this.physics.add.overlap(player, feedGroup, this.collectFeed, undefined, this);
@@ -52,16 +60,16 @@ export default class AgarioScene extends Phaser.Scene {
 			return;
 
 		player.eat(feed);
-		player.updateSize();
 		feed.destroy();
 		console.log(player.mass);
+		console.log(player.getSpeed());
 	}
 
 	update(time: number, delta: number): void {
 		let velocity = this.getInput();
 
-		velocity.x *= this.speed;
-		velocity.y *= this.speed;
+		velocity.x *= this.player.getSpeed();
+		velocity.y *= this.player.getSpeed();
 
 		(this.player.body as Phaser.Physics.Arcade.Body).setVelocity(velocity.x, velocity.y);
 	}

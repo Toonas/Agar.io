@@ -17,6 +17,7 @@ export default class MoveableEater extends Feed implements IMoveable, IFeedable 
 
         this.mass += feed.mass;
         feed.mass = 0;
+        this.updateSize();
     }
 
     checkFeedPosibility(feed: IEatable) {
